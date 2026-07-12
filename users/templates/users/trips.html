@@ -1,0 +1,155 @@
+{% extends "users/app_base.html" %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <form method="get" class="toolbar">
+      <select name="status">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Status: Draft</option>
+        <option value="dispatched" {% if status_filter == 'dispatched' %}selected{% endif %}>Status: Dispatched</option>
+        <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>Status: Completed</option>
+        <option value="cancelled" {% if status_filter == 'cancelled' %}selected{% endif %}>Status: Cancelled</option>
+      </select>
+      <button class="button light" type="submit">Apply</button>
+      <a class="button light" href="{% url 'trips' %}">Reset</a>
+      <button class="button" type="button" onclick="openAddTripModal()">+ Create Trip</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Trips</h3>
+      <span class="status dispatched">Track and manage fleet dispatch status</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Trip ID</th>
+          <th>Vehicle</th>
+          <th>Driver</th>
+          <th>Route</th>
+          <th>Cargo</th>
+          <th>Distance</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trip in trips %}
+          <tr>
+            <td><strong>TR-{{ trip.id|stringformat:"04d" }}</strong></td>
+            <td>{{ trip.vehicle.registration_number }}</td>
+            <td>{{ trip.driver.first_name }} {{ trip.driver.last_name }}</td>
+            <td>{{ trip.origin }} → {{ trip.destination }}</td>
+            <td>{{ trip.cargo_weight }} kg</td>
+            <td>{{ trip.planned_distance_km }} km</td>
+            <td><span class="status {{ trip.status }}">{{ trip.get_status_display }}</span></td>
+            <td>
+              <div class="row-actions">
+                {% if trip.status == 'draft' %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="dispatch">
+                    <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                    <button type="submit" class="primary">Dispatch</button>
+                  </form>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel">
+                    <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                    <button type="submit" class="danger">Cancel</button>
+                  </form>
+                {% elif trip.status == 'dispatched' %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="complete">
+                    <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                    <button type="submit" class="primary">Complete</button>
+                  </form>
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="cancel">
+                    <input type="hidden" name="trip_id" value="{{ trip.id }}">
+                    <button type="submit" class="danger">Cancel</button>
+                  </form>
+                {% else %}
+                  <span class="empty" style="padding:0;">--</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty">No trips found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="addTripOverlay" {% if not show_add_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Create Trip</h3>
+          <p>Plan a new trip as a draft before dispatching.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeAddTripModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="create">
+        <div class="form-grid">
+          <div class="field">
+            <label for="{{ trip_form.origin.id_for_label }}">Source <span class="req">*</span></label>
+            {{ trip_form.origin }}
+            {{ trip_form.origin.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ trip_form.destination.id_for_label }}">Destination <span class="req">*</span></label>
+            {{ trip_form.destination }}
+            {{ trip_form.destination.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ trip_form.vehicle.id_for_label }}">Vehicle <span class="req">*</span></label>
+            {{ trip_form.vehicle }}
+            {{ trip_form.vehicle.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ trip_form.driver.id_for_label }}">Driver <span class="req">*</span></label>
+            {{ trip_form.driver }}
+            {{ trip_form.driver.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ trip_form.cargo_weight.id_for_label }}">Cargo Weight (kg) <span class="req">*</span></label>
+            {{ trip_form.cargo_weight }}
+            {{ trip_form.cargo_weight.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ trip_form.planned_distance_km.id_for_label }}">Planned Distance (km) <span class="req">*</span></label>
+            {{ trip_form.planned_distance_km }}
+            {{ trip_form.planned_distance_km.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeAddTripModal()">Cancel</button>
+          <button type="submit" class="button">Create Trip</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    function openAddTripModal() {
+      document.getElementById('addTripOverlay').hidden = false;
+    }
+    function closeAddTripModal() {
+      document.getElementById('addTripOverlay').hidden = true;
+    }
+  </script>
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends "users/app_base.html" %}
+
+{% block extra_head %}
+  <style>
+    .duplicate-alert {
+      margin-top: 14px;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .duplicate-details {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 14px;
+      font-weight: 500;
+      color: #7c2d12;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <form method="get" class="toolbar">
+      <select name="status">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Status: Active</option>
+        <option value="on_trip" {% if status_filter == 'on_trip' %}selected{% endif %}>Status: On Trip</option>
+        <option value="in_shop" {% if status_filter == 'in_shop' %}selected{% endif %}>Status: In Shop</option>
+        <option value="retired" {% if status_filter == 'retired' %}selected{% endif %}>Status: Retired</option>
+      </select>
+      <button class="button light" type="submit">Apply</button>
+      <a class="button light" href="{% url 'fleet' %}">Reset</a>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Fleet Registry</h3>
+      <button class="button" type="button" onclick="openAddVehicleModal()">+ Add Vehicle</button>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Reg No</th>
+          <th>Make/Model</th>
+          <th>Type</th>
+          <th>Region</th>
+          <th>Capacity</th>
+          <th>Odometer</th>
+          <th>Acq. Cost</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vehicle in vehicles %}
+          <tr>
+            <td><strong>{{ vehicle.registration_number }}</strong></td>
+            <td>{{ vehicle.make }} {{ vehicle.model }}</td>
+            <td>{{ vehicle.get_vehicle_type_display }}</td>
+            <td>{{ vehicle.get_region_display }}</td>
+            <td>{{ vehicle.cargo_capacity }} kg</td>
+            <td>{{ vehicle.odometer }} km</td>
+            <td>{{ vehicle.acquisition_cost }}</td>
+            <td><span class="status {{ vehicle.status }}">{{ vehicle.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="8" class="empty">No vehicles found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="addVehicleOverlay" {% if not show_add_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Add Vehicle</h3>
+          <p>Register a new vehicle to the fleet.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeAddVehicleModal()" aria-label="Close">&times;</button>
+      </div>
+
+      {% if duplicate_vehicle %}
+        <div class="duplicate-alert">
+          <strong>{{ duplicate_vehicle.registration_number }}</strong> is already registered.
+          <div class="duplicate-details">
+            <span>Make/Model: {{ duplicate_vehicle.make }} {{ duplicate_vehicle.model }}</span>
+            <span>Type: {{ duplicate_vehicle.get_vehicle_type_display }}</span>
+            <span>Capacity: {{ duplicate_vehicle.cargo_capacity }} kg</span>
+            <span>Odometer: {{ duplicate_vehicle.odometer }} km</span>
+            <span>Acquisition Cost: {{ duplicate_vehicle.acquisition_cost }}</span>
+            <span>Status: {{ duplicate_vehicle.get_status_display }}</span>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="field">
+            <label for="{{ vehicle_form.registration_number.id_for_label }}">Registration No. <span class="req">*</span></label>
+            {{ vehicle_form.registration_number }}
+            {{ vehicle_form.registration_number.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.make.id_for_label }}">Make <span class="req">*</span></label>
+            {{ vehicle_form.make }}
+            {{ vehicle_form.make.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.model.id_for_label }}">Model <span class="req">*</span></label>
+            {{ vehicle_form.model }}
+            {{ vehicle_form.model.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.vehicle_type.id_for_label }}">Vehicle Type</label>
+            {{ vehicle_form.vehicle_type }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.status.id_for_label }}">Initial Status</label>
+            {{ vehicle_form.status }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.cargo_capacity.id_for_label }}">Capacity (kg) <span class="req">*</span></label>
+            {{ vehicle_form.cargo_capacity }}
+            {{ vehicle_form.cargo_capacity.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.odometer.id_for_label }}">Odometer Reading (km)</label>
+            {{ vehicle_form.odometer }}
+          </div>
+          <div class="field">
+            <label for="{{ vehicle_form.acquisition_cost.id_for_label }}">Acquisition Cost <span class="req">*</span></label>
+            {{ vehicle_form.acquisition_cost }}
+            {{ vehicle_form.acquisition_cost.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeAddVehicleModal()">Cancel</button>
+          <button type="submit" class="button">Add Vehicle</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function openAddVehicleModal() {
+      document.getElementById('addVehicleOverlay').hidden = false;
+    }
+    function closeAddVehicleModal() {
+      document.getElementById('addVehicleOverlay').hidden = true;
+    }
+  </script>
+{% endblock %}

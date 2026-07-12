@@ -1,0 +1,200 @@
+{% extends "users/app_base.html" %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <div class="toolbar">
+      <button class="button light" type="button" onclick="openExpenseModal()">+ Log Expense</button>
+      <button class="button" type="button" onclick="openFuelModal()">+ Log Fuel</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Operational Cost per Vehicle</h3>
+      <span class="status dispatched">Operational Cost = Fuel + Maintenance</span>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle</th>
+          <th>Fuel Cost</th>
+          <th>Maintenance Cost</th>
+          <th>Other Expenses</th>
+          <th>Operational Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in vehicle_costs %}
+          <tr>
+            <td><strong>{{ row.vehicle.registration_number }}</strong></td>
+            <td>{{ row.fuel_cost }}</td>
+            <td>{{ row.maintenance_cost }}</td>
+            <td>{{ row.expense_cost }}</td>
+            <td><strong>{{ row.operational_cost }}</strong></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty">No vehicles found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel" style="margin-top:16px;">
+    <div class="panel-head">
+      <h3>Fuel Logs</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle</th>
+          <th>Liters</th>
+          <th>Cost</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in fuel_logs %}
+          <tr>
+            <td><strong>{{ log.vehicle.registration_number }}</strong></td>
+            <td>{{ log.liters }} L</td>
+            <td>{{ log.cost }}</td>
+            <td>{{ log.date_logged }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4" class="empty">No fuel logs found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <section class="panel" style="margin-top:16px;">
+    <div class="panel-head">
+      <h3>Other Expenses</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Cost</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in expense_logs %}
+          <tr>
+            <td><strong>{{ log.vehicle.registration_number }}</strong></td>
+            <td>{{ log.get_category_display }}</td>
+            <td>{{ log.description }}</td>
+            <td>{{ log.cost }}</td>
+            <td>{{ log.date_logged }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty">No expenses found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="fuelOverlay" {% if not show_fuel_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Log Fuel</h3>
+          <p>Record a fuel fill-up for a vehicle.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeFuelModal()" aria-label="Close">&times;</button>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="log_fuel">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="{{ fuel_form.vehicle.id_for_label }}">Vehicle <span class="req">*</span></label>
+            {{ fuel_form.vehicle }}
+            {{ fuel_form.vehicle.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ fuel_form.liters.id_for_label }}">Liters <span class="req">*</span></label>
+            {{ fuel_form.liters }}
+            {{ fuel_form.liters.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ fuel_form.cost.id_for_label }}">Cost <span class="req">*</span></label>
+            {{ fuel_form.cost }}
+            {{ fuel_form.cost.errors }}
+          </div>
+          <div class="field full">
+            <label for="{{ fuel_form.date_logged.id_for_label }}">Date <span class="req">*</span></label>
+            {{ fuel_form.date_logged }}
+            {{ fuel_form.date_logged.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeFuelModal()">Cancel</button>
+          <button type="submit" class="button">Log Fuel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="expenseOverlay" {% if not show_expense_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Log Expense</h3>
+          <p>Record a toll or other vehicle-related expense.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeExpenseModal()" aria-label="Close">&times;</button>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="log_expense">
+        <div class="form-grid">
+          <div class="field full">
+            <label for="{{ expense_form.vehicle.id_for_label }}">Vehicle <span class="req">*</span></label>
+            {{ expense_form.vehicle }}
+            {{ expense_form.vehicle.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ expense_form.category.id_for_label }}">Type</label>
+            {{ expense_form.category }}
+          </div>
+          <div class="field">
+            <label for="{{ expense_form.cost.id_for_label }}">Cost <span class="req">*</span></label>
+            {{ expense_form.cost }}
+            {{ expense_form.cost.errors }}
+          </div>
+          <div class="field full">
+            <label for="{{ expense_form.description.id_for_label }}">Description</label>
+            {{ expense_form.description }}
+            {{ expense_form.description.errors }}
+          </div>
+          <div class="field full">
+            <label for="{{ expense_form.date_logged.id_for_label }}">Date <span class="req">*</span></label>
+            {{ expense_form.date_logged }}
+            {{ expense_form.date_logged.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeExpenseModal()">Cancel</button>
+          <button type="submit" class="button">Log Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    function openFuelModal() { document.getElementById('fuelOverlay').hidden = false; }
+    function closeFuelModal() { document.getElementById('fuelOverlay').hidden = true; }
+    function openExpenseModal() { document.getElementById('expenseOverlay').hidden = false; }
+    function closeExpenseModal() { document.getElementById('expenseOverlay').hidden = true; }
+  </script>
+{% endblock %}

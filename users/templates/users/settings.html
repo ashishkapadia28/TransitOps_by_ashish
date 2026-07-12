@@ -1,0 +1,164 @@
+{% extends "users/app_base.html" %}
+
+{% block extra_head %}
+  <style>
+    .settings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 16px;
+      align-items: start;
+    }
+    .settings-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .settings-field label {
+      font-size: 0.76rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #7a8596;
+    }
+    .settings-field input {
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 0 12px;
+      font-size: 0.95rem;
+      color: var(--ink);
+      background: #fff;
+    }
+    .settings-field ul.errorlist {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      color: var(--danger);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .rbac-table { width: 100%; border-collapse: collapse; }
+    .rbac-table th, .rbac-table td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid rgba(29, 38, 53, 0.06);
+      font-size: 0.9rem;
+    }
+    .rbac-table th {
+      color: #7a8596;
+      font-size: 0.74rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .rbac-table select {
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #344054;
+    }
+    @media (max-width: 1024px) {
+      .settings-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+  </section>
+
+  <div class="settings-grid">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>General</h3>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="general">
+        <div class="settings-field">
+          <label for="{{ general_form.depot_name.id_for_label }}">{{ general_form.depot_name.label }}</label>
+          {{ general_form.depot_name }}
+          {{ general_form.depot_name.errors }}
+        </div>
+        <div class="settings-field">
+          <label for="{{ general_form.currency.id_for_label }}">{{ general_form.currency.label }}</label>
+          {{ general_form.currency }}
+          {{ general_form.currency.errors }}
+        </div>
+        <div class="settings-field">
+          <label for="{{ general_form.distance_unit.id_for_label }}">{{ general_form.distance_unit.label }}</label>
+          {{ general_form.distance_unit }}
+          {{ general_form.distance_unit.errors }}
+        </div>
+        <button class="button" type="submit">Save changes</button>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Role-Based Access (RBAC)</h3>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="action" value="rbac">
+        <table class="rbac-table">
+          <thead>
+            <tr>
+              <th>Role</th>
+              {% for module, module_label in rbac_modules %}
+                <th>{{ module_label }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rbac_grid %}
+              <tr>
+                <td><strong>{{ row.role_label }}</strong></td>
+                {% for cell in row.cells %}
+                  <td>
+                    <select name="perm_{{ row.role }}_{{ cell.module }}">
+                      {% for value, label in access_choices %}
+                        <option value="{{ value }}" {% if cell.access == value %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <button class="button" type="submit" style="margin-top:16px;">Save changes</button>
+      </form>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:16px; max-width:480px;">
+    <div class="panel-head">
+      <h3>Change Password</h3>
+    </div>
+    <form method="post" novalidate>
+      {% csrf_token %}
+      <input type="hidden" name="action" value="password">
+      <div class="settings-field">
+        <label for="{{ password_form.old_password.id_for_label }}">Current Password</label>
+        {{ password_form.old_password }}
+        {{ password_form.old_password.errors }}
+      </div>
+      <div class="settings-field">
+        <label for="{{ password_form.new_password1.id_for_label }}">New Password</label>
+        {{ password_form.new_password1 }}
+        {{ password_form.new_password1.errors }}
+      </div>
+      <div class="settings-field">
+        <label for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
+        {{ password_form.new_password2 }}
+        {{ password_form.new_password2.errors }}
+      </div>
+      <button class="button" type="submit">Update Password</button>
+    </form>
+  </section>
+{% endblock %}

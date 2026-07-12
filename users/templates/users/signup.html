@@ -1,0 +1,53 @@
+{% extends "users/base_auth.html" %}
+{% block title %}Create Account | TransitOps{% endblock %}
+{% block content %}
+  <h2>Create your account</h2>
+  <p class="subtle">Set up secure access with your email and a role assignment.</p>
+
+  {% if form.non_field_errors %}
+    <ul class="errors">
+      {% for error in form.non_field_errors %}
+        <li class="error-box">{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="grid-2">
+      <div class="field">
+        <label for="id_first_name">First Name</label>
+        {{ form.first_name }}
+        {{ form.first_name.errors }}
+      </div>
+      <div class="field">
+        <label for="id_last_name">Last Name</label>
+        {{ form.last_name }}
+        {{ form.last_name.errors }}
+      </div>
+    </div>
+    <div class="field">
+      <label for="id_email">Email</label>
+      {{ form.email }}
+      {{ form.email.errors }}
+    </div>
+    <div class="field">
+      <label for="id_role">Role</label>
+      {{ form.role }}
+      {{ form.role.errors }}
+      <div class="help-text">Choose the role that matches this user's access level.</div>
+    </div>
+    <div class="field">
+      <label for="id_password1">Password</label>
+      {{ form.password1 }}
+      {{ form.password1.errors }}
+    </div>
+    <div class="field">
+      <label for="id_password2">Confirm Password</label>
+      {{ form.password2 }}
+      {{ form.password2.errors }}
+    </div>
+    <button class="btn" type="submit">Create Account</button>
+  </form>
+  <p class="muted-link">Already have an account? <a href="{% url 'login' %}">Sign in</a></p>
+{% endblock %}

@@ -1,0 +1,108 @@
+{% extends "users/app_base.html" %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <button class="button" type="button" onclick="openAddMaintenanceModal()">+ Log Maintenance</button>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Maintenance Log</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle</th>
+          <th>Description</th>
+          <th>Cost</th>
+          <th>Date Logged</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+          <tr>
+            <td><strong>{{ log.vehicle.registration_number }}</strong></td>
+            <td>{{ log.description }}</td>
+            <td>{{ log.cost }}</td>
+            <td>{{ log.date_logged }}</td>
+            <td>
+              {% if log.resolved %}
+                <span class="status available">Resolved</span>
+              {% else %}
+                <span class="status in_shop">In Shop</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if not log.resolved %}
+                <form method="post" class="row-actions">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="resolve">
+                  <input type="hidden" name="log_id" value="{{ log.id }}">
+                  <button type="submit" class="primary">Mark Resolved</button>
+                </form>
+              {% else %}
+                <span class="empty" style="padding:0;">--</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty">No maintenance records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="addMaintenanceOverlay" {% if not show_add_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Log Maintenance</h3>
+          <p>Adding a record automatically marks the vehicle as In Shop.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeAddMaintenanceModal()" aria-label="Close">&times;</button>
+      </div>
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="field full">
+            <label for="{{ maintenance_form.vehicle.id_for_label }}">Vehicle <span class="req">*</span></label>
+            {{ maintenance_form.vehicle }}
+            {{ maintenance_form.vehicle.errors }}
+          </div>
+          <div class="field full">
+            <label for="{{ maintenance_form.description.id_for_label }}">Description <span class="req">*</span></label>
+            {{ maintenance_form.description }}
+            {{ maintenance_form.description.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ maintenance_form.cost.id_for_label }}">Cost <span class="req">*</span></label>
+            {{ maintenance_form.cost }}
+            {{ maintenance_form.cost.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeAddMaintenanceModal()">Cancel</button>
+          <button type="submit" class="button">Log Maintenance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    function openAddMaintenanceModal() {
+      document.getElementById('addMaintenanceOverlay').hidden = false;
+    }
+    function closeAddMaintenanceModal() {
+      document.getElementById('addMaintenanceOverlay').hidden = true;
+    }
+  </script>
+{% endblock %}

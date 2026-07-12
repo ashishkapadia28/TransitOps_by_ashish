@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}TransitOps{% endblock %}</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #161a22;
+      --panel-2: #1d2430;
+      --accent: #f5a623;
+      --text: #1d2430;
+      --muted: #6d7480;
+      --border: rgba(29, 36, 48, 0.12);
+      --white: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top right, rgba(245,166,35,0.09), transparent 28%),
+        linear-gradient(180deg, #f6f3ee 0%, #f0ece4 100%);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
+    a { color: inherit; text-decoration: none; }
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1.15fr;
+    }
+    .brand-panel {
+      background: linear-gradient(180deg, var(--panel) 0%, var(--panel-2) 100%);
+      color: #f7f3ea;
+      padding: 48px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+    .brand-panel::before {
+      content: "";
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(245,166,35,0.14) 0%, transparent 70%);
+      top: -120px;
+      left: -120px;
+    }
+    .brand-panel::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 72%);
+      bottom: -60px;
+      right: -60px;
+    }
+    .brand {
+      position: relative;
+      z-index: 1;
+    }
+    .brand h1 {
+      margin: 0 0 10px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 2.8rem;
+      line-height: 1;
+    }
+    .brand p {
+      margin: 0;
+      color: rgba(247,243,234,0.76);
+      max-width: 18rem;
+    }
+    .role-list {
+      position: relative;
+      z-index: 1;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
+      color: rgba(247,243,234,0.9);
+      font-size: 0.95rem;
+    }
+    .role-list li {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .role-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 6px rgba(245,166,35,0.15);
+      flex: 0 0 auto;
+    }
+    .auth-panel {
+      padding: 48px 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .card {
+      width: min(520px, 100%);
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(29, 36, 48, 0.08);
+      border-radius: 28px;
+      padding: 34px;
+      box-shadow: 0 30px 80px rgba(19, 24, 32, 0.10);
+    }
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      letter-spacing: -0.04em;
+    }
+    .card .subtle {
+      margin: 0 0 26px;
+      color: var(--muted);
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    .field label {
+      display: block;
+      font-size: 0.85rem;
+      margin: 0 0 6px;
+      color: #404756;
+      font-weight: 600;
+    }
+    .field input, .field select {
+      width: 100%;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 13px 14px;
+      background: #fff;
+      font-size: 1rem;
+      outline: none;
+    }
+    .field input:focus, .field select:focus {
+      border-color: rgba(245,166,35,0.8);
+      box-shadow: 0 0 0 4px rgba(245,166,35,0.12);
+    }
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.95rem;
+      color: #4b5260;
+      margin: 6px 0 18px;
+    }
+    .checkbox-row input { width: 18px; height: 18px; }
+    .btn {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 14px 18px;
+      background: linear-gradient(180deg, #f6ad27 0%, #eb940d 100%);
+      color: #131722;
+      font-weight: 800;
+      font-size: 1rem;
+      cursor: pointer;
+      box-shadow: 0 16px 30px rgba(245,166,35,0.28);
+    }
+    .btn:hover { filter: brightness(1.02); }
+    .muted-link {
+      margin-top: 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .muted-link a {
+      color: #d48300;
+      font-weight: 700;
+    }
+    .errors, .messages {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 18px;
+    }
+    .error-box, .message-box {
+      border-radius: 14px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+    }
+    .error-box {
+      background: #fff0f0;
+      color: #b11c1c;
+      border: 1px solid #f4c1c1;
+    }
+    .message-box {
+      background: #eefaf0;
+      color: #176b2e;
+      border: 1px solid #bfe4c8;
+    }
+    .help-text {
+      font-size: 0.82rem;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .brand-panel { min-height: 320px; }
+      .auth-panel { padding: 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="brand-panel">
+      <div class="brand">
+        <h1>TransitOps</h1>
+        <p>Secure fleet management with email login, role-based access, and protected operations.</p>
+      </div>
+      <ul class="role-list">
+        <li><span class="role-dot"></span>Admin</li>
+        <li><span class="role-dot"></span>Fleet Manager</li>
+        <li><span class="role-dot"></span>Dispatcher</li>
+        <li><span class="role-dot"></span>Safety Officer</li>
+        <li><span class="role-dot"></span>Financial Analyst</li>
+      </ul>
+    </aside>
+    <main class="auth-panel">
+      <section class="card">
+        {% block content %}{% endblock %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>

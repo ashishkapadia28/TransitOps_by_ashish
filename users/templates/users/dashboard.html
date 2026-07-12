@@ -1,0 +1,101 @@
+{% extends "users/app_base.html" %}
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <form method="get" class="toolbar">
+      <select name="vehicle_type">
+        <option value="all" {% if selected_vehicle_type == 'all' %}selected{% endif %}>Vehicle Type: All</option>
+        {% for item in vehicle_types %}
+          <option value="{{ item }}" {% if selected_vehicle_type == item %}selected{% endif %}>Vehicle Type: {{ item|capfirst }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="all" {% if selected_status == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>Status: Active</option>
+        <option value="on_trip" {% if selected_status == 'on_trip' %}selected{% endif %}>Status: On Trip</option>
+        <option value="in_shop" {% if selected_status == 'in_shop' %}selected{% endif %}>Status: In Shop</option>
+        <option value="retired" {% if selected_status == 'retired' %}selected{% endif %}>Status: Retired</option>
+      </select>
+      <select name="region">
+        <option value="all" {% if selected_region == 'all' %}selected{% endif %}>Region: All</option>
+        {% for item in regions %}
+          <option value="{{ item }}" {% if selected_region == item %}selected{% endif %}>Region: {{ item|capfirst }}</option>
+        {% endfor %}
+      </select>
+      <button class="button light" type="submit">Apply</button>
+      <a class="button light" href="{% url 'dashboard' %}">Reset</a>
+    </form>
+  </section>
+
+  <section style="display:grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px;">
+    <div class="card-kpi"><span>Active Vehicles</span><strong>{{ active_vehicles }}</strong></div>
+    <div class="card-kpi"><span>Available Vehicles</span><strong>{{ available_vehicles }}</strong></div>
+    <div class="card-kpi"><span>Vehicles in Maintenance</span><strong>{{ maintenance_vehicles }}</strong></div>
+    <div class="card-kpi"><span>Active Trips</span><strong>{{ active_trips }}</strong></div>
+    <div class="card-kpi"><span>Pending Trips</span><strong>{{ pending_trips }}</strong></div>
+    <div class="card-kpi"><span>Drivers On Duty</span><strong>{{ drivers_on_duty }}</strong></div>
+    <div class="card-kpi"><span>Fleet Utilization (%)</span><strong>{{ fleet_utilization }}%</strong></div>
+  </section>
+
+  <section class="dash-grid">
+    <article class="panel">
+      <div class="panel-head">
+        <h3>Recent Trips</h3>
+        <a href="{% url 'trips' %}">View all</a>
+      </div>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Trip ID</th>
+            <th>Vehicle</th>
+            <th>Driver</th>
+            <th>Status</th>
+            <th>Route</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for trip in recent_trips %}
+            <tr>
+              <td>TR-{{ trip.id|stringformat:"04d" }}</td>
+              <td>{{ trip.vehicle.registration_number }}</td>
+              <td>{{ trip.driver.first_name }} {{ trip.driver.last_name }}</td>
+              <td><span class="status {{ trip.status }}">{{ trip.get_status_display }}</span></td>
+              <td>{{ trip.origin }} -> {{ trip.destination }}</td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="5" class="empty">No trips found.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </article>
+
+    <article class="panel">
+      <h3>Vehicle Status</h3>
+      <div class="status-list">
+        <div class="status-row">
+          <span>Available</span>
+          <div class="bar dark"><span style="width:{% widthratio available_vehicles status_max 100 %}%"></span></div>
+          <strong>{{ available_vehicles }}</strong>
+        </div>
+        <div class="status-row">
+          <span>On Trip</span>
+          <div class="bar blue"><span style="width:{% widthratio active_trips status_max 100 %}%"></span></div>
+          <strong>{{ active_trips }}</strong>
+        </div>
+        <div class="status-row">
+          <span>In Shop</span>
+          <div class="bar amber"><span style="width:{% widthratio maintenance_vehicles status_max 100 %}%"></span></div>
+          <strong>{{ maintenance_vehicles }}</strong>
+        </div>
+        <div class="status-row">
+          <span>Retired</span>
+          <div class="bar red"><span style="width:10%"></span></div>
+          <strong>0</strong>
+        </div>
+      </div>
+    </article>
+  </section>
+{% endblock %}

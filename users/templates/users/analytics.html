@@ -1,0 +1,230 @@
+{% extends "users/app_base.html" %}
+
+{% block extra_head %}
+  <style>
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 12px;
+    }
+    .formula-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin: 4px 0 22px;
+    }
+    .formula-arrow {
+      background: #fff;
+      border: 1px solid var(--line);
+      color: #475467;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 16px;
+    }
+    .bars { display: flex; align-items: flex-end; gap: 10px; height: 150px; }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 8px; }
+    .bar-col .bar { width: 100%; max-width: 34px; background: var(--accent); border-radius: 6px 6px 2px 2px; min-height: 4px; height: auto; }
+    .bar-col-label { font-size: 0.72rem; color: var(--muted); }
+
+    .hbars { display: flex; flex-direction: column; gap: 18px; justify-content: center; height: 150px; }
+    .hbar-row { display: grid; grid-template-columns: 68px 1fr; align-items: center; gap: 10px; }
+    .hbar-label { font-size: 0.78rem; color: #344054; font-weight: 700; }
+    .hbar-track { height: 10px; background: #edf1f6; border-radius: 999px; overflow: hidden; }
+    .hbar-fill { height: 100%; border-radius: 999px; }
+
+    .roi-positive { color: var(--success); font-weight: 700; }
+    .roi-negative { color: var(--danger); font-weight: 700; }
+
+    @media (max-width: 900px) {
+      .charts-row { grid-template-columns: 1fr; }
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <div class="toolbar">
+      <button class="button" type="button" onclick="openRevenueModal()">+ Log Revenue</button>
+      <a class="button light" href="{% url 'analytics-export-csv' %}">Export CSV</a>
+      <a class="button light" href="{% url 'analytics-export-pdf' %}">Export PDF</a>
+    </div>
+  </section>
+
+  <div class="kpi-row">
+    <div class="card-kpi">
+      <span>Fuel Efficiency</span>
+      <strong>{% if fleet_summary.fuel_efficiency is not None %}{{ fleet_summary.fuel_efficiency|floatformat:1 }} km/l{% else %}N/A{% endif %}</strong>
+    </div>
+    <div class="card-kpi">
+      <span>Fleet Utilization</span>
+      <strong>{{ fleet_summary.utilization }}%</strong>
+    </div>
+    <div class="card-kpi">
+      <span>Operational Cost</span>
+      <strong>{{ fleet_summary.operational_cost|floatformat:0 }}</strong>
+    </div>
+    <div class="card-kpi">
+      <span>Vehicle ROI</span>
+      <strong>{% if fleet_summary.roi_percent is not None %}{{ fleet_summary.roi_percent|floatformat:1 }}%{% else %}N/A{% endif %}</strong>
+    </div>
+  </div>
+
+  <div class="formula-row">
+    <button class="formula-arrow" type="button" onclick="adPrevFormula()">&lsaquo;</button>
+    <span id="adFormulaText">Fuel Efficiency = Distance / Fuel</span>
+    <button class="formula-arrow" type="button" onclick="adNextFormula()">&rsaquo;</button>
+  </div>
+
+  <div class="charts-row">
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Monthly Revenue</h3>
+      </div>
+      <div class="bars">
+        {% for point in monthly_revenue %}
+          <div class="bar-col">
+            <div class="bar" style="height: {{ point.percent }}%;" title="{{ point.amount }}"></div>
+            <span class="bar-col-label">{{ point.label }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <h3>Top Costliest Vehicles</h3>
+      </div>
+      <div class="hbars">
+        {% for row in top_costliest %}
+          <div class="hbar-row">
+            <span class="hbar-label">{{ row.vehicle.registration_number }}</span>
+            <div class="hbar-track">
+              <div class="hbar-fill" style="width: {{ row.percent }}%; background: {{ row.color }};"></div>
+            </div>
+          </div>
+        {% empty %}
+          <p class="empty">No cost data yet.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </div>
+
+  <section class="panel" style="margin-top:16px;">
+    <div class="panel-head">
+      <h3>Fleet Performance by Vehicle</h3>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Vehicle</th>
+          <th>Fuel Efficiency</th>
+          <th>Operational Cost</th>
+          <th>Revenue</th>
+          <th>ROI</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in vehicle_metrics %}
+          <tr>
+            <td><strong>{{ row.vehicle.registration_number }}</strong></td>
+            <td>{% if row.fuel_efficiency is not None %}{{ row.fuel_efficiency|floatformat:2 }} km/l{% else %}N/A{% endif %}</td>
+            <td>{{ row.operational_cost }}</td>
+            <td>{{ row.revenue }}</td>
+            <td>
+              {% if row.roi_percent is not None %}
+                <span class="{% if row.roi_percent >= 0 %}roi-positive{% else %}roi-negative{% endif %}">{{ row.roi_percent|floatformat:2 }}%</span>
+              {% else %}
+                N/A
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5" class="empty">No vehicles found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="revenueOverlay" {% if not show_revenue_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Log Revenue</h3>
+          <p>Record revenue earned by a vehicle.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeRevenueModal()" aria-label="Close">&times;</button>
+      </div>
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="field full">
+            <label for="{{ revenue_form.vehicle.id_for_label }}">Vehicle <span class="req">*</span></label>
+            {{ revenue_form.vehicle }}
+            {{ revenue_form.vehicle.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ revenue_form.amount.id_for_label }}">Revenue Amount <span class="req">*</span></label>
+            {{ revenue_form.amount }}
+            {{ revenue_form.amount.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ revenue_form.date_logged.id_for_label }}">Date <span class="req">*</span></label>
+            {{ revenue_form.date_logged }}
+            {{ revenue_form.date_logged.errors }}
+          </div>
+          <div class="field full">
+            <label for="{{ revenue_form.description.id_for_label }}">Description</label>
+            {{ revenue_form.description }}
+            {{ revenue_form.description.errors }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeRevenueModal()">Cancel</button>
+          <button type="submit" class="button">Log Revenue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    function openRevenueModal() { document.getElementById('revenueOverlay').hidden = false; }
+    function closeRevenueModal() { document.getElementById('revenueOverlay').hidden = true; }
+
+    const AD_FORMULAS = [
+      'Fuel Efficiency = Distance / Fuel',
+      'Fleet Utilization = Dispatched Trips / Active Vehicles',
+      'Operational Cost = Fuel + Maintenance',
+      'ROI = (Revenue − (Maintenance + Fuel)) / Acquisition Cost',
+    ];
+    let adFormulaIndex = 0;
+    function adRenderFormula() {
+      document.getElementById('adFormulaText').textContent = AD_FORMULAS[adFormulaIndex];
+    }
+    function adNextFormula() {
+      adFormulaIndex = (adFormulaIndex + 1) % AD_FORMULAS.length;
+      adRenderFormula();
+    }
+    function adPrevFormula() {
+      adFormulaIndex = (adFormulaIndex - 1 + AD_FORMULAS.length) % AD_FORMULAS.length;
+      adRenderFormula();
+    }
+  </script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "users/base_auth.html" %}
+{% block title %}Sign In | TransitOps{% endblock %}
+{% block content %}
+  <h2>Sign in to your account</h2>
+  <p class="subtle">Enter your credentials to continue to TransitOps.</p>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for message in messages %}
+        <li class="message-box">{{ message }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  {% if form.non_field_errors %}
+    <ul class="errors">
+      {% for error in form.non_field_errors %}
+        <li class="error-box">{{ error }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="field">
+      <label for="id_email">Email</label>
+      {{ form.email }}
+      {{ form.email.errors }}
+    </div>
+    <div class="field">
+      <label for="id_password">Password</label>
+      {{ form.password }}
+      {{ form.password.errors }}
+    </div>
+    <label class="checkbox-row">
+      {{ form.remember_me }} Remember me
+    </label>
+    <button class="btn" type="submit">Sign In</button>
+  </form>
+  <p class="muted-link">New here? <a href="{% url 'signup' %}">Create an account</a></p>
+{% endblock %}

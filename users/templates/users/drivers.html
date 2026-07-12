@@ -1,0 +1,150 @@
+{% extends "users/app_base.html" %}
+
+{% block extra_head %}
+  <style>
+    .duplicate-alert {
+      margin-top: 14px;
+      background: #fff7ed;
+      border: 1px solid #fdba74;
+      color: #9a3412;
+      border-radius: 12px;
+      padding: 12px 14px;
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .duplicate-details {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px 14px;
+      font-weight: 500;
+      color: #7c2d12;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+  <section class="page-head">
+    <div>
+      <h1>{{ page_title }}</h1>
+      <p>{{ page_subtitle }}</p>
+    </div>
+    <form method="get" class="toolbar">
+      <select name="status">
+        <option value="all" {% if status_filter == 'all' %}selected{% endif %}>Status: All</option>
+        <option value="available" {% if status_filter == 'available' %}selected{% endif %}>Status: On Duty</option>
+        <option value="on_trip" {% if status_filter == 'on_trip' %}selected{% endif %}>Status: On Trip</option>
+        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Status: Inactive</option>
+      </select>
+      <button class="button light" type="submit">Apply</button>
+      <a class="button light" href="{% url 'drivers' %}">Reset</a>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h3>Drivers Roster</h3>
+      <button class="button" type="button" onclick="openAddDriverModal()">+ Add Driver</button>
+    </div>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Driver Name</th>
+          <th>Employee ID</th>
+          <th>License No</th>
+          <th>Expiry</th>
+          <th>Assigned Vehicle</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for driver in drivers %}
+          <tr>
+            <td><strong>{{ driver.first_name }} {{ driver.last_name }}</strong></td>
+            <td>{{ driver.employee_id }}</td>
+            <td>{{ driver.license_number }}</td>
+            <td>{{ driver.license_expiry_date }}</td>
+            <td>{{ driver.assigned_vehicle.registration_number|default:"--" }}</td>
+            <td><span class="status {{ driver.status }}">{{ driver.get_status_display }}</span></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="6" class="empty">No drivers found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <div class="modal-overlay" id="addDriverOverlay" {% if not show_add_modal %}hidden{% endif %}>
+    <div class="modal">
+      <div class="modal-head">
+        <div>
+          <h3>Add Driver</h3>
+          <p>Register a new driver to the roster.</p>
+        </div>
+        <button type="button" class="modal-close" onclick="closeAddDriverModal()" aria-label="Close">&times;</button>
+      </div>
+
+      {% if duplicate_driver %}
+        <div class="duplicate-alert">
+          <strong>{{ duplicate_driver.employee_id }}</strong> / <strong>{{ duplicate_driver.license_number }}</strong> is already registered.
+          <div class="duplicate-details">
+            <span>Name: {{ duplicate_driver.first_name }} {{ duplicate_driver.last_name }}</span>
+            <span>License Expiry: {{ duplicate_driver.license_expiry_date }}</span>
+            <span>Assigned Vehicle: {{ duplicate_driver.assigned_vehicle.registration_number|default:"--" }}</span>
+            <span>Status: {{ duplicate_driver.get_status_display }}</span>
+          </div>
+        </div>
+      {% endif %}
+
+      <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="form-grid">
+          <div class="field">
+            <label for="{{ driver_form.employee_id.id_for_label }}">Employee ID <span class="req">*</span></label>
+            {{ driver_form.employee_id }}
+            {{ driver_form.employee_id.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ driver_form.full_name.id_for_label }}">Full Name <span class="req">*</span></label>
+            {{ driver_form.full_name }}
+            {{ driver_form.full_name.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ driver_form.license_number.id_for_label }}">License No. <span class="req">*</span></label>
+            {{ driver_form.license_number }}
+            {{ driver_form.license_number.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ driver_form.license_expiry_date.id_for_label }}">License Expiry <span class="req">*</span></label>
+            {{ driver_form.license_expiry_date }}
+            {{ driver_form.license_expiry_date.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ driver_form.assigned_vehicle.id_for_label }}">Assigned Vehicle</label>
+            {{ driver_form.assigned_vehicle }}
+            {{ driver_form.assigned_vehicle.errors }}
+          </div>
+          <div class="field">
+            <label for="{{ driver_form.status.id_for_label }}">Status</label>
+            {{ driver_form.status }}
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="button light" onclick="closeAddDriverModal()">Cancel</button>
+          <button type="submit" class="button">Add Driver</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_scripts %}
+  <script>
+    function openAddDriverModal() {
+      document.getElementById('addDriverOverlay').hidden = false;
+    }
+    function closeAddDriverModal() {
+      document.getElementById('addDriverOverlay').hidden = true;
+    }
+  </script>
+{% endblock %}
